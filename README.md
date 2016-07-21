@@ -1,5 +1,5 @@
 # Pico2play
-A modified pico2wave version to use text to speech without intermediate file.
+A modified pico2wave version to use text to speech without intermediate file, and without waiting time, the speech synthesis start before all the sentence was calculated.
 
 How to compile it (into the "pico" folder)
 >gcc -Wall -I lib -g -O2 -c -o pico2play.o bin/pico2play.c   
