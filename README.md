@@ -6,4 +6,4 @@ How to compile it (into the "pico" folder)
 >gcc -o pico2play pico2play.o -lpopt -lm lib/libttspico.a portaudio/libportaudio.a -lpthread -lasound -ljack   
 
 To run it
->./pico2play -l fr-FR -w pico.wav "test"   
+>./pico2play -l fr-FR "test"   
