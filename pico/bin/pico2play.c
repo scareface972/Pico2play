@@ -262,7 +262,7 @@ int cPlay_paStreamCallback(const void *input, void *output,unsigned long frameCo
 
 
 int main(int argc, const char *argv[]) {
-	char * wavefile = NULL;
+	//char * wavefile = NULL;
 	char * lang = "en-US";
 	int langIndex = -1, langIndexTmp = -1;
 	char * text;
@@ -274,10 +274,8 @@ int main(int argc, const char *argv[]) {
 	int opt; /* used for argument parsing */
 
 	struct poptOption optionsTable[] = {
-		{ "wave", 'w', POPT_ARG_STRING, &wavefile, 0,
-		"Write output to this WAV file (extension SHOULD be .wav)", "filename.wav" },
-		{ "lang", 'l', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &lang, 0,
-		"Language", "lang" },
+		//{ "wave", 'w', POPT_ARG_STRING, &wavefile, 0, "Write output to this WAV file (extension SHOULD be .wav)", "filename.wav" },
+		{ "lang", 'l', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &lang, 0, "Language", "lang" },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -303,13 +301,14 @@ int main(int argc, const char *argv[]) {
 			exit(1);
 		}
 	}
-
+#if 0
 	/* Mandatory option: --wave */
 	if(!wavefile) {
 		fprintf(stderr, "Mandatory option: %s\n\n", "--wave=filename.wav");
 		poptPrintHelp(optCon, stderr, 0);
 		exit(1);
 	}
+#endif
 	/* option: --lang */
 	for(langIndexTmp =0; langIndexTmp<picoNumSupportedVocs; langIndexTmp++) {
 		if(!strcmp(picoSupportedLang[langIndexTmp], lang)) {
@@ -446,11 +445,13 @@ int main(int argc, const char *argv[]) {
 
 	size_t bufused = 0;
 
-	picoos_Common common = (picoos_Common) pico_sysGetCommon(picoSystem);
+	//picoos_Common common = (picoos_Common) pico_sysGetCommon(picoSystem);
 
-	picoos_SDFile sdOutFile = NULL;
+	//picoos_SDFile sdOutFile = NULL;
 
 	picoos_bool done = TRUE;
+
+/*
 	if(TRUE != (done = picoos_sdfOpenOut(common, &sdOutFile,
 		(picoos_char *) wavefile, SAMPLE_FREQ_16KHZ, PICOOS_ENC_LIN)))
 	{
@@ -458,12 +459,13 @@ int main(int argc, const char *argv[]) {
 		ret = 1;
 		goto disposeEngine;
 	}
-
+*/
 
 	/* synthesis loop   */
 	while (text_remaining) {
 		/* Feed the text into the engine.   */
-		if((ret = pico_putTextUtf8( picoEngine, inp, text_remaining, &bytes_sent ))) {
+		if((ret = pico_putTextUtf8( picoEngine, inp, text_remaining, &bytes_sent )))
+		{
 			pico_getSystemStatusMessage(picoSystem, ret, outMessage);
 			fprintf(stderr, "Cannot put Text (%i): %s\n", ret, outMessage);
 			goto disposeEngine;
@@ -473,7 +475,8 @@ int main(int argc, const char *argv[]) {
 		inp += bytes_sent;
 
 		do {
-			if (picoSynthAbort) {
+			if (picoSynthAbort)
+			{
 				goto disposeEngine;
 			}
 			/* Retrieve the samples and add them to the buffer. */
@@ -493,7 +496,7 @@ int main(int argc, const char *argv[]) {
 				}
 				else
 				{
-					done = picoos_sdfPutSamples(sdOutFile, bufused / 2,(picoos_int16*) (buffer));
+					done = TRUE;//picoos_sdfPutSamples(sdOutFile, bufused / 2,(picoos_int16*) (buffer));
 
 					//copy data to buffer
 					userData.data = (unsigned char *)realloc(userData.data,userData.num_frames * (bytesPerSample * numChannels) + bufused);
@@ -523,18 +526,24 @@ int main(int argc, const char *argv[]) {
 		/* This chunk of synthesis is finished; pass the remaining samples. */
 		if (!picoSynthAbort)
 		{
-			done = picoos_sdfPutSamples( sdOutFile, bufused / 2, (picoos_int16*) (buffer));
+			done = TRUE;//picoos_sdfPutSamples( sdOutFile, bufused / 2, (picoos_int16*) (buffer));
+
+			//copy data to buffer
+			userData.data = (unsigned char *)realloc(userData.data,userData.num_frames * (bytesPerSample * numChannels) + bufused);
+			memcpy(userData.data + userData.num_frames * (bytesPerSample * numChannels),buffer,bufused );
+			userData.num_frames = userData.num_frames + ( bufused /  (bytesPerSample * numChannels) ) ;
+
 		}
 		picoSynthAbort = 0;
 	}
-
+/*
 	if(TRUE != (done = picoos_sdfCloseOut(common, &sdOutFile)))
 	{
 		fprintf(stderr, "Cannot close output wave file\n");
 		ret = 1;
 		goto disposeEngine;
 	}
-
+*/
 disposeEngine:
 	if (picoEngine) {
 		pico_disposeEngine( picoSystem, &picoEngine );
