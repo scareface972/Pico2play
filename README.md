@@ -3,7 +3,7 @@ A modified pico2wave version to use text to speech without intermediate file, an
 
 Dependances
 >sudo apt-get install portaudio19-dev   
->sudo apt-get install libttspico-dev
+>sudo apt-get install libttspico-dev (useless, file not found)
 
 How to compile it (into the "pico" folder)
 >gcc -Wall -I lib -g -O2 -c -o pico2play.o bin/pico2play.c   
