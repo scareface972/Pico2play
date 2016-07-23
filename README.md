@@ -11,7 +11,7 @@ How to compile it (into the "pico" folder)
 To run it
 >./pico2play -l fr-FR "test"   
 
-Specials options
+Specials options (already in pico lib)
 >./pico2play -l fr-FR "\<pitch level='100'>\<speed level='80'>test\</speed>\</pitch>"
 
 TODO:   
