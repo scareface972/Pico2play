@@ -6,8 +6,11 @@ Dependances
 >(not working) sudo apt-get install libttspico-dev (file not found)
 
 How to compile it (into the "pico" folder)
->gcc -Wall -I lib -g -O2 -c -o pico2play.o bin/pico2play.c   
->gcc -o pico2play pico2play.o -lpopt -lm lib/libttspico.a portaudio/libportaudio.a -lpthread -lasound -ljack   
+>make 
 
 To run it
 >./pico2play -l fr-FR "test"   
+
+Specials options
+>./pico2play -l fr-FR "<pitch level='100'><speed level='80'>test</speed></pitch>"
+
