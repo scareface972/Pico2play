@@ -26,23 +26,30 @@
 */
 
 
-#include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <wchar.h>
-#include <unistd.h>
+
+#ifndef _WIN32
+	#include <unistd.h>
+#endif
 
 
-#include <picoapi.h>
-#include <picoapid.h>
-#include <picoos.h>
+//#define LOCAL
+#ifdef LOCAL
+	#include "../lib/picoapi.h"
+	#include "../lib/picoapid.h"
+	#include "../lib/picoos.h"
 
-#include "../portaudio/portaudio.h"
-#include "../portaudio/pa_ringbuffer.h"
-#include "../portaudio/pa_util.h"
+	#include "../portaudio/portaudio.h"
+#else
+	#include <picoapi.h>
+	#include <picoapid.h>
+	#include <picoos.h>
 
+	#include <portaudio.h>
+#endif
 
 /* adaptation layer defines */
 #define PICO_MEM_SIZE       2500000
@@ -87,7 +94,7 @@ int     picoSynthAbort = 0;
 
 
 
-int fd = 0;
+
 int  PortAudioInitialised = 0;
 int cPlay_paStreamCallback(const void *input, void *output,unsigned long frameCount,const PaStreamCallbackTimeInfo* timeInfo,PaStreamCallbackFlags statusFlags,void *userData);
 
@@ -114,6 +121,7 @@ paTestData userData;
 
 int InitPortAudio(void)
 {
+	int fd = 0;
 
 	if (PortAudioInitialised == 1) return 1;
 
@@ -223,7 +231,11 @@ int cPlay_paStreamCallback(const void *input, void *output,unsigned long frameCo
 	size_t numRead = 0;
 
 	int typesize =  bytesPerSample * numChannels;
-	int restant = data_struct->num_frames - data_struct->cursor/typesize;
+	unsigned long restant = data_struct->num_frames - data_struct->cursor/typesize;
+
+	(void) input; /* Prevent unused variable warnings. */
+	(void) timeInfo; /* Prevent unused variable warnings. */
+	(void) statusFlags; /* Prevent unused variable warnings. */
 
 	//printf("Current %ld Remaining %ld\n",data_struct->cursor, restant);
 
@@ -261,26 +273,25 @@ int cPlay_paStreamCallback(const void *input, void *output,unsigned long frameCo
 
 
 
-int main(int argc, const char *argv[]) {
-	//char * wavefile = NULL;
+static void usage(void)
+{
+    fprintf(stderr,"\nUsage:\n\n" \
+           "pico2play [-l language] \"Text to speak\"\n\n");
+    exit(0);
+}
+
+
+
+int main(int argc, char *argv[]) {
+
 	char * lang = "en-US";
 	int langIndex = -1, langIndexTmp = -1;
-	char * text;
+	char * text = NULL;
 	int8_t * buffer;
 	size_t bufferSize = 256;
 
-	/* Parsing options */
-	poptContext optCon; /* context for parsing command-line options */
-	int opt; /* used for argument parsing */
-
-	struct poptOption optionsTable[] = {
-		//{ "wave", 'w', POPT_ARG_STRING, &wavefile, 0, "Write output to this WAV file (extension SHOULD be .wav)", "filename.wav" },
-		{ "lang", 'l', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &lang, 0, "Language", "lang" },
-		POPT_AUTOHELP
-		POPT_TABLEEND
-	};
-	optCon = poptGetContext(NULL, argc, argv, optionsTable, POPT_CONTEXT_POSIXMEHARDER);
-	poptSetOtherOptionHelp(optCon, "<words>");
+	//For command line
+	int currentOption;
 
 
 	InitPortAudio();
@@ -291,25 +302,31 @@ int main(int argc, const char *argv[]) {
 		exit(0);
 	}
 
-	/* Reporting about invalid extra options */
-	while ((opt = poptGetNextOpt(optCon)) != -1) {
-		switch (opt) {
-		default:
-			fprintf(stderr, "Invalid option %s: %s\n", 
-				poptBadOption(optCon, 0), poptStrerror(opt));
-			poptPrintHelp(optCon, stderr, 0);
-			exit(1);
-		}
+
+	//Command line parser
+	while ( (currentOption = getopt(argc, argv, "l:")) != -1)
+    {
+        switch (currentOption)
+        {
+        case 'l':
+            lang = optarg;
+            break;
+        default:
+            usage();
+        }
 	}
-#if 0
-	/* Mandatory option: --wave */
-	if(!wavefile) {
-		fprintf(stderr, "Mandatory option: %s\n\n", "--wave=filename.wav");
-		poptPrintHelp(optCon, stderr, 0);
-		exit(1);
+
+	if (optind < argc)
+        text = argv[optind];
+
+    if (!text)
+    {
+        fprintf(stderr, "Error: no input string\n");
+        usage();
 	}
-#endif
-	/* option: --lang */
+
+
+	/* Language selection */
 	for(langIndexTmp =0; langIndexTmp<picoNumSupportedVocs; langIndexTmp++) {
 		if(!strcmp(picoSupportedLang[langIndexTmp], lang)) {
 			langIndex = langIndexTmp;
@@ -323,28 +340,11 @@ int main(int argc, const char *argv[]) {
 		}
 		lang = "en-US";
 		fprintf(stderr, "\n");
-		poptPrintHelp(optCon, stderr, 0);
 		exit(1);
 	}
 
-	/* Remaining argument is <words> */
-	const char **extra_argv;
-	extra_argv = poptGetArgs(optCon);
-	if(extra_argv)
-	{
-		text = (char *) &(*extra_argv)[0];
-	}
-	else
-	{
-		//TODO: stdin not supported yet.
-		fprintf(stderr, "Missing argument: %s\n\n", "<words>");
-		poptPrintHelp(optCon, stderr, 0);
-		exit(1);
-	}
 
-	poptFreeContext(optCon);
-
-	buffer = malloc( bufferSize );
+	buffer = (int8_t *)malloc( bufferSize );
 
 	int ret, getstatus;
 	pico_Char * inp = NULL;
@@ -445,22 +445,6 @@ int main(int argc, const char *argv[]) {
 
 	size_t bufused = 0;
 
-	//picoos_Common common = (picoos_Common) pico_sysGetCommon(picoSystem);
-
-	//picoos_SDFile sdOutFile = NULL;
-
-	picoos_bool done = TRUE;
-
-/*
-	if(TRUE != (done = picoos_sdfOpenOut(common, &sdOutFile,
-		(picoos_char *) wavefile, SAMPLE_FREQ_16KHZ, PICOOS_ENC_LIN)))
-	{
-		fprintf(stderr, "Cannot open output wave file\n");
-		ret = 1;
-		goto disposeEngine;
-	}
-*/
-
 	/* synthesis loop   */
 	while (text_remaining) {
 		/* Feed the text into the engine.   */
@@ -496,8 +480,6 @@ int main(int argc, const char *argv[]) {
 				}
 				else
 				{
-					done = TRUE;//picoos_sdfPutSamples(sdOutFile, bufused / 2,(picoos_int16*) (buffer));
-
 					//copy data to buffer
 					userData.data = (unsigned char *)realloc(userData.data,userData.num_frames * (bytesPerSample * numChannels) + bufused);
 					memcpy(userData.data + userData.num_frames * (bytesPerSample * numChannels),buffer,bufused );
@@ -526,7 +508,6 @@ int main(int argc, const char *argv[]) {
 		/* This chunk of synthesis is finished; pass the remaining samples. */
 		if (!picoSynthAbort)
 		{
-			done = TRUE;//picoos_sdfPutSamples( sdOutFile, bufused / 2, (picoos_int16*) (buffer));
 
 			//copy data to buffer
 			userData.data = (unsigned char *)realloc(userData.data,userData.num_frames * (bytesPerSample * numChannels) + bufused);
@@ -536,14 +517,7 @@ int main(int argc, const char *argv[]) {
 		}
 		picoSynthAbort = 0;
 	}
-/*
-	if(TRUE != (done = picoos_sdfCloseOut(common, &sdOutFile)))
-	{
-		fprintf(stderr, "Cannot close output wave file\n");
-		ret = 1;
-		goto disposeEngine;
-	}
-*/
+
 disposeEngine:
 	if (picoEngine) {
 		pico_disposeEngine( picoSystem, &picoEngine );
