@@ -14,3 +14,6 @@ To run it
 Specials options
 >./pico2play -l fr-FR "\<pitch level='100'>\<speed level='80'>test\</speed>\</pitch>"
 
+TODO:
+Update the makefile in the lib folder to generate the libportaudio.a file.
+The portaudio folder is useless ATM.
