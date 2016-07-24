@@ -1,5 +1,5 @@
 # Pico2play
-A modified pico2wave version to use text to speech without intermediate file, and without waiting time, the speech synthesis start before all the sentence was calculated.
+A modified pico2wave version (Speech synthesis application very used on raspberry) to use text to speech without intermediate file, and without waiting time, the speech synthesis start before all the sentence was calculated.
 
 Dependances
 >sudo apt-get install portaudio19-dev   
