@@ -8,12 +8,14 @@ Dependances
 How to compile it (into the "pico" folder)
 >make 
 
-To run it
+To run it:   
+pico2play [-l language] [-m] "Text to speak"
+The parameter -m is to use the multithreading mode, to avoid waiting time.
 >./pico2play -l fr-FR "test"   
 
 Specials options (already in pico lib,just to remember)
 >./pico2play -l fr-FR "\<pitch level='100'>\<speed level='80'>test\</speed>\</pitch>"
 
 TODO:   
-Update the makefile in the lib folder to generate the libportaudio.a file.   
+Update the makefile in the lib folder to generate the libttspico.a file.   
 The portaudio folder is useless ATM.
