@@ -105,7 +105,6 @@ int sampleRate = 16000; //16000 Hz
 int bytesPerSample = 2; //16 bit unsigned
 
 int bitsPerSample;
-int start = 0;
 
 typedef struct
 {
@@ -276,7 +275,7 @@ int cPlay_paStreamCallback(const void *input, void *output,unsigned long frameCo
 static void usage(void)
 {
     fprintf(stderr,"\nUsage:\n\n" \
-           "pico2play [-l language] \"Text to speak\"\n\n");
+           "pico2play [-l language] [-m] \"Text to speak\"\n\n");
     exit(0);
 }
 
@@ -289,6 +288,8 @@ int main(int argc, char *argv[]) {
 	char * text = NULL;
 	int8_t * buffer;
 	size_t bufferSize = 256;
+	int mode = 0; // 0 = normal 1 = multithread
+	long start = 0;
 
 	//For command line
 	int currentOption;
@@ -304,13 +305,17 @@ int main(int argc, char *argv[]) {
 
 
 	//Command line parser
-	while ( (currentOption = getopt(argc, argv, "l:")) != -1)
+	while ( (currentOption = getopt(argc, argv, "l:m")) != -1)
     {
         switch (currentOption)
         {
         case 'l':
             lang = optarg;
             break;
+        case 'm':
+            mode = 1;
+            break;
+
         default:
             usage();
         }
@@ -324,7 +329,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: no input string\n");
         usage();
 	}
-
 
 	/* Language selection */
 	for(langIndexTmp =0; langIndexTmp<picoNumSupportedVocs; langIndexTmp++) {
@@ -492,7 +496,7 @@ int main(int argc, char *argv[]) {
 
 					start++;
 
-					if (start == 2)
+					if ((start == 3) && (mode == 1))
 					{
 						if (Pa_StartStream(stream) != paNoError)
 						{
@@ -545,11 +549,14 @@ terminate:
 		picoSystem = NULL;
 	}
 
-
-	//printf("Nbre de frames %ld\n",userData.num_frames);
-
-	//CHECK(Pa_StartStream(stream) == paNoError);
-	//printf("Debut de l'attente\n");
+	if (mode == 0)
+	{
+		if (Pa_StartStream(stream) != paNoError)
+		{
+			printf("can't start sound");
+			exit(0);
+		}
+	}
 
 	// wait until stream has finished playing
 	while (Pa_IsStreamActive(stream) > 0)
